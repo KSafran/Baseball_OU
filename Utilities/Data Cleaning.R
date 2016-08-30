@@ -42,3 +42,9 @@ identify.team <- function(name.vector){
   }
   z
 }
+
+remove.funky.string <- function(char.vector){
+  char.vector %>%  str_replace_all('Â', '') %>%
+    str_trim() %>%
+    as.numeric()
+}

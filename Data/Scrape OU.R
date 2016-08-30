@@ -64,7 +64,7 @@ for(i in seq_along(dates2)){
   ou.list[[i]] <- data.frame(home.team = teams[seq(2,length(teams)-1,2)],
                              away.team = teams[seq(1,length(teams)-2,2)],
                              home.pitcher = pitchers[seq(2,length(teams),2)],
-                             away.pitcer = pitchers[seq(1,length(teams)-1,2)],
+                             away.pitcher = pitchers[seq(1,length(teams)-1,2)],
                              home.money.line = money.line[seq(3,length(teams),2)],
                              away.money.line = money.line[seq(2,length(teams)-1,2)],
                              over.under = over.under[nchar(over.under)>2],
