@@ -8,6 +8,10 @@ library(dplyr)
 library(magrittr)
 library(stringr)
 
+# Set start and end pull dates
+start.date <- '2015-04-06'
+end.date <- '2015-10-31'
+
 big.data.frame <- data.frame(game = 'game',
                              away= 'away',
                              home = 'home',
@@ -19,7 +23,7 @@ big.data.frame <- data.frame(game = 'game',
 URL.base <- 'http://www.vegasinsider.com/mlb/scoreboard/scores.cfm/game_date/'
 
 # Lets use dates from the 2015 season
-dates <- ymd(seq.Date(as.Date('2015-04-06'), as.Date('2015-10-31'), by = 'day'))
+dates <- ymd(seq.Date(as.Date(start.date), as.Date(end.date), by = 'day'))
 
 # Vegas Insider URLs use dates in mm-dd-yyyy format
 dates2 <- format(dates,'%m-%d-%Y')
@@ -43,6 +47,19 @@ for(i in seq_along(dates2)){
   over.under <- raw.out[lag(line.identifier,2)]
   result <- str_replace(raw.out[grepl('Over:|Under:|Push:',raw.out)], 'Â','')
   
+  # some days don't have games. If that is the case just go to the next day
+  if(length(teams) == 0){next}
+  
+  # sometimes games are delayed or rained out. These are luckily funneled to the bottom of the 
+  # site, but they will cause an error if length(results) < the length of the other stuff we are 
+  # putting into this data.frame. In these cases we will just add in NAs to the results
+  
+  length.table <- length(over.under[nchar(over.under)>2])
+  
+  if(length(result) < length.table){
+    result <- c(result, rep(NA, length.table - length(result)))
+  }
+  
   # combine these into a data frame, save to a list. Home team always listed second
   ou.list[[i]] <- data.frame(home.team = teams[seq(2,length(teams)-1,2)],
                              away.team = teams[seq(1,length(teams)-2,2)],
@@ -53,29 +70,12 @@ for(i in seq_along(dates2)){
                              over.under = over.under[nchar(over.under)>2],
                              result = result,
                              date = dates2[i])
+  
+  # print progess after every 10 days
+  if(i %% 10 == 0) {print(i)}
 }
 
-final.raw <- big.data.frame[!duplicated(big.data.frame),]
+scraped.data <- rbind_all(ou.list)
 
-summary(mdy(final.raw$date))   
+saveRDS(scraped.data, file = 'Data/over_under_scrape_2015.Rda')
 
-final.raw$date <- mdy(final.raw$date)
-final.raw$home.odds <- gsub('Â |Â', '',final.raw$home.odds)                     
-final.raw$away.odds <- gsub('Â |Â', '',final.raw$away.odds) 
-final.raw$UO <- gsub('Â |Â', '',final.raw$UO)                     
-
-final.raw$home <- to.short.club.name(final.raw$home)
-final.raw$away <- to.short.club.name(final.raw$away)
-
-final.raw$home.odds <- as.numeric(final.raw$home.odds)
-final.raw$away.odds <- as.numeric(final.raw$away.odds)
-
-mlb <- read.csv('mlb.csv')
-
-# join odds and OU by date and home ballpark
-
-mlb$lubridated <- ymd(mlb$date)
-final.raw$lubridated <- final.raw$date
-final.raw$ballpark <- final.raw$home
-mlb.new <- merge(mlb, final.raw, by = c('lubridated','ballpark'), all.x = TRUE)
-write.csv(mlb.new,'mlb_odds.csv')
