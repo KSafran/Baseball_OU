@@ -45,3 +45,10 @@ scraped.data$Date <- mdy(scraped.data$date)
 # join em together
 over.under.data <- left_join(scraped.data, weather.home,
                              by = c('Date','home.team' = 'Team' ,'away.pitch.last'))
+
+# the missing 40 games appear to be random, we will just drop them, might  be rained out games?
+over.under.data <- over.under.data[!is.na(over.under.data$ADI),]
+# then 9 more don't have valid results, we can ddrop those too
+over.under.data <- over.under.data[over.under.data$result != '',]
+
+saveRDS(over.under.data, file = 'Data/over_under_weather.R')
